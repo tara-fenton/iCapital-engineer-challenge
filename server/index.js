@@ -10,6 +10,10 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 const fs = require("fs");
 
+const cors = require("cors");
+
+app.use(cors({ origin: "http://localhost:5173" }));
+
 app.get("/", (req, res) => {
     res.send("Welcome to the homepage!");
 });
