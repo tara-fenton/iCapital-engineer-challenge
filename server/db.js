@@ -1,8 +1,8 @@
-const { execute } = require("./sql");
+const { exec } = require("./sql");
 
 const initDb = async () => {
   try {
-    await execute(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS investors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT NOT NULL,
@@ -17,7 +17,7 @@ const initDb = async () => {
       );
     `);
 
-    await execute(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS documents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         investor_id INTEGER NOT NULL,

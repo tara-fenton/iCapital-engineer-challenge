@@ -1,5 +1,6 @@
 const express = require("express");
 const { initDb } = require("./db");
+const { run } = require("./sql"); 
 
 const PORT = 3000;
 const app = express();
@@ -37,12 +38,63 @@ const validateForm = (req, res, next) => {
     next();
 };
 
-app.post("/api/investors", upload.array("files"), validateForm, (req, res) => {
-    res.status(200).json({
-        message: 'File and fields uploaded successfully',
-        data: req.body,
-        file: req.files
-    })
+app.post("/api/investors", upload.array("files"), validateForm, async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName,
+        dob,
+        phone,
+        street,
+        state,
+        zip,
+      } = req.body;
+
+      const now = new Date().toISOString();
+
+      // insert investor
+      const investorResult = await run(
+        `
+        INSERT INTO investors
+        (first_name, last_name, date_of_birth, phone, street, state, zip, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [firstName, lastName, dob, phone, street, state, zip, now, now]
+      );
+
+      const investorId = investorResult.lastID;
+
+      // insert documents (one row per uploaded file)
+      const files = req.files || [];
+
+      for (const file of files) {
+        await run(
+          `
+          INSERT INTO documents
+          (investor_id, original_name, mime_type, size_bytes, stored_path, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          [
+            investorId,
+            file.originalname,
+            file.mimetype,
+            file.size,
+            file.path, // path in /uploads
+            now,
+          ]
+        );
+      }
+
+      // response
+      res.status(201).json({
+        status: "success",
+        investor_id: investorId,
+        message: "Investor and documents saved successfully",
+      });
+    } catch (err) {
+      console.error("DB Insert Error:", err);
+      res.status(500).json({ status: "error", message: "Server error" });
+    }
 });
 
 initDb().then(() => {
